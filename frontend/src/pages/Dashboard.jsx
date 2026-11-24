@@ -1,0 +1,19 @@
+import { useEffect,useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Mic, Target, Trophy, Clock, ArrowRight, FileText, Play } from "lucide-react";
+import { getProfile } from "../services/authService";
+import { listInterviews,listResumes } from "../services/interviewService";
+import Workspace from "../components/Workspace";
+
+export default function Dashboard(){
+ const navigate=useNavigate();const [user,setUser]=useState(null),[sessions,setSessions]=useState([]),[resumes,setResumes]=useState([]),[error,setError]=useState("");
+ useEffect(()=>{let alive=true;(async()=>{try{const [u,i,r]=await Promise.all([getProfile(),listInterviews(),listResumes()]);if(alive){setUser(u);setSessions(Array.isArray(i)?i:i.results||[]);setResumes(Array.isArray(r)?r:r.results||[])}}catch(e){if(alive)setError("Some dashboard data could not load. Confirm that Django is running.");}})();return()=>{alive=false}},[]);
+ const done=sessions.filter(s=>s.status==="completed");const scores=done.map(s=>s.score).filter(v=>v!==null&&v!==undefined);const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;const best=scores.length?Math.max(...scores):0;const first=user?.first_name||user?.username||"there";
+ return <Workspace><div className="dashboard-page"><div className="dashboard-welcome"><div><h1>Good to see you, {first} 👋</h1><p>Here’s your interview preparation overview.</p></div><span className="status-pill">● AI Coach Ready</span></div>
+ {error&&<div className="error-box">{error}</div>}
+ <div className="dashboard-stats"><div className="stat-card"><span className="stat-icon purple"><Mic/></span><b>{done.length}</b><p>Interviews completed</p></div><div className="stat-card"><span className="stat-icon blue"><Target/></span><b>{avg}%</b><p>Average score {scores.length?"from completed sessions":"· no scores yet"}</p></div><div className="stat-card"><span className="stat-icon green"><Trophy/></span><b>{best}</b><p>Best interview score</p></div><div className="stat-card"><span className="stat-icon orange"><Clock/></span><b>{sessions.length}</b><p>Total practice sessions</p></div></div>
+ <div className="dashboard-hero"><div><h2>Ready for your next interview?</h2><p>Practice with tailored questions, write your answers and get feedback to help you improve.</p><button className="primary-button" onClick={()=>navigate("/interview/setup")}><Play size={16}/> Start AI Interview <ArrowRight size={16}/></button></div></div>
+ <div className="dashboard-lower"><div className="panel"><div className="dashboard-panel-head"><div><h2>Recent interviews</h2><p>Your latest practice sessions</p></div><button className="text-button" onClick={()=>navigate("/interviews")}>View all</button></div>{sessions.length===0?<div className="empty-state"><p>Your interview history will appear here after your first session.</p></div>:sessions.slice(0,4).map(s=><div className="dashboard-session" key={s.id}><div className="session-symbol"><Mic size={18}/></div><div className="session-copy"><b>{s.role}</b><p>{s.type} · {s.level}</p></div><strong>{s.score!=null?`${s.score}%`:s.status==="completed"?"Completed":"In progress"}</strong><button className="secondary-button" onClick={()=>navigate(`/interview/${s.id}`)}>Open</button></div>)}</div>
+ <div className="panel dashboard-resume"><div className="dashboard-panel-head"><div><h2>Resume</h2><p>Personalize your practice</p></div><FileText size={20}/></div>{resumes.length?<><p className="resume-count">{resumes.length} resume(s) uploaded</p>{resumes.slice(0,2).map(r=><p className="resume-name" key={r.id}>{r.title||"Resume PDF"} {r.analysis?"✓ Analyzed":""}</p>)}</>:<p className="empty-resume">Upload a PDF to review your skills and practice for roles based on your experience.</p>}<button className="primary-button" onClick={()=>navigate("/resume")}>{resumes.length?"Manage resume":"Upload resume"} <ArrowRight size={15}/></button></div></div>
+ </div></Workspace>
+}

@@ -1,0 +1,10 @@
+import api from "./api";
+export const listInterviews = async () => (await api.get("interviews/")).data;
+export const createInterview = async (payload) => (await api.post("interviews/", payload)).data;
+export const getInterview = async (id) => (await api.get(`interviews/${id}/`)).data;
+export const submitInterview = async (id, answers) => (await api.post(`interviews/${id}/submit/`, { answers })).data;
+export const listResumes = async () => (await api.get("resumes/")).data;
+export const uploadResume = async (file) => { const form = new FormData(); form.append("file", file); form.append("title", file.name); return (await api.post("resumes/", form, { headers: {"Content-Type":"multipart/form-data"} })).data; };
+export const analyzeResume = async (id) => (await api.post(`resumes/${id}/analyze/`)).data;
+export const deleteResume = async (id) => (await api.delete(`resumes/${id}/`)).data;
+export const updateProfile = async (data) => (await api.patch("auth/profile/", data)).data;
